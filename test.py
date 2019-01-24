@@ -4,11 +4,180 @@
 import pickle
 from tkinter import *
 from collections import OrderedDict
+import time
+
+class Noeud:
+    """docstring for Noeud"""
+    def __init__(self, puzzle, cout, heuristique):
+        self.puzzle = puzzle
+        self.cout = cout
+        self.heuristique = heuristique
+        
+
+class File:
+
+    def __init__(self, name):
+        self.noeuds = []    # creates a new empty list
+        self.max = 0
+        self.name = name
+
+    def ajouter(self, noeud):
+        self.noeuds.append(noeud)
+        self.max += 1
+        print('On vient d\'ajouter un element a {}, on en a actuellement {}'.format(self.name, self.max))
+
+    def supprimer(self, noeud):
+        self.noeuds.remove(noeud)
+        self.max -= 1
+        print('On vient de supprimer un element a {}, on en a actuellement {}'.format(self.name, self.max))
+
+    def depiler(self):
+        if self.max == 0:
+            return -1
+        ret = self.noeuds[0]
+        n = 0
+        print('In depiler')
+        while n < self.max:
+            # print('noeuds[{}]:  {},{}\nret: {},{}'.format(n, self.noeuds[n].heuristique, self.noeuds[n].cout, ret.heuristique, ret.cout))
+            if compare2Noeuds(self.noeuds[n], ret) == 1:
+                ret = self.noeuds[n]
+            n += 1
+        print('On return : {},{}'.format(ret.heuristique, ret.cout))
+        return ret
+
+
+def compare2Noeuds(n1, n2):
+    if n1.heuristique < n2.heuristique or (n1.heuristique == n2.heuristique and n1.cout < n2.cout):
+        return 1
+    elif n1.heuristique == n2.heuristique and n1.cout == n2.cout:
+        return 0
+    else :
+        return -1
+
+def heuristique(puzzle, puzzleGoal):
+    commun = 0;
+    items = 0;
+    for coordonne, valeur in puzzle.items():
+        items += 1
+        if int(valeur) == int(puzzleGoal[coordonne[0], coordonne[1]]):
+            commun += 1
+    return items - commun
+
+def createVoisin(noeud, oldPos0, newPos0):
+    voisin = Noeud(noeud.puzzle.copy(), noeud.cout + 1, noeud.heuristique)
+    tmp = voisin.puzzle[oldPos0]
+    # print('oldPos0 = {}, newPos0 = {}'.format(oldPos0, newPos0))
+    voisin.puzzle[oldPos0] = voisin.puzzle[newPos0]
+    voisin.puzzle[newPos0] = tmp
+    voisin.heuristique = heuristique(voisin.puzzle, puzzleGoal)
+    return voisin
+
+def findCoordonne0(puzzle):
+    for cle, valeur in puzzle.items():
+        if int(valeur) == 0:
+            return cle
+
+def voisins(noeud):
+    voisins = []
+    coordonne0 = (-1,-1);
+    coordonneMax = (-1,-1);
+    for cle, valeur in noeud.puzzle.items():
+        if int(valeur) == 0:
+            coordonne0 = cle
+        coordonneMax = cle
+    # print('Noeud actuel\nheuristique: {}\ncout: {}\ncoordonne0: {},{}\ncoordonne max: {},{}\nVoisins :'.format(noeud.heuristique, noeud.cout, coordonne0[0], coordonne0[1], coordonneMax[0], coordonneMax[1]))
+    # print('1    coordonne0 : {},{}'.format(coordonne0[0], coordonne0[1] - 1))
+    # print('2    coordonne0 : {},{}'.format(coordonne0[0], coordonne0[1] + 1))
+    # print('3    coordonne0 : {},{}'.format(coordonne0[0] - 1, coordonne0[1]))
+    print('4    coordonne0 : {},{}\n\n'.format(coordonne0[0] + 1, coordonne0[1]))
+    if coordonne0[1] >= 1:
+        # print('1    coordonne0 : {},{}'.format(coordonne0[0], coordonne0[1] - 1))
+        voisins.append(createVoisin(noeud, coordonne0, (coordonne0[0], coordonne0[1] - 1)))
+    if coordonne0[1] < coordonneMax[1]:
+        # print('2    coordonne0 : {},{}'.format(coordonne0[0], coordonne0[1] + 1))
+        voisins.append(createVoisin(noeud, coordonne0, (coordonne0[0], coordonne0[1] + 1)))
+    if coordonne0[0] >= 1:
+        # print('3    coordonne0 : {},{}'.format(coordonne0[0] - 1, coordonne0[1]))
+        voisins.append(createVoisin(noeud, coordonne0, (coordonne0[0] - 1, coordonne0[1])))
+    if coordonne0[0] < coordonneMax[0]:
+        # print('4    coordonne0 : {},{}'.format(coordonne0[0] + 1, coordonne0[1]))
+        voisins.append(createVoisin(noeud, coordonne0, (coordonne0[0] + 1, coordonne0[1])))
+    return voisins
+
+def same2Dict(dict1, dict2):
+    for cle, valeur in dict1.items():
+        if dict2[cle] != valeur:
+            return 0
+    return 1
+
+def puzzleInList(list, puzzle):
+    for noeud in list:
+        if same2Dict(noeud.puzzle, puzzle) == 1:
+            return 1
+    return 0
+
+def coutPuzzleInList(list, puzzle):
+    for noeud in list:
+        if same2Dict(noeud.puzzle, puzzle) == 1:
+            return noeud.cout
+    return 0
+
+def onSup(frame):
+    for w in frame.winfo_children():
+        w.destroy()
+
+def loop():
+    
+    noeudActuel = Noeud(puzzle, 0, 0)
+
+    closedList = File("closedList")
+    openList = File("openList")
+    openList.ajouter(noeudActuel)
+    i = 0
+    while openList.max > 0:
+        i += 1
+        print('Boucle #{}'.format(i))
+        # noeudActuel = openList.noeuds[0]
+        noeudActuel = openList.depiler()
+        onSup(FrameRPuzzle)
+        # print ("Start : {}".format(time.ctime()))
+        time.sleep(0.2)
+        # print ("End : {}".format(time.ctime()))
+        drawPuzzle(FrameRPuzzle, noeudActuel.puzzle, puzzleGoal)
+        fenetre.update()
+        if heuristique(noeudActuel.puzzle, puzzleGoal) == 0:
+            return(1)
+        for v in voisins(noeudActuel):
+            if (puzzleInList(closedList.noeuds, v.puzzle) and v.cout >= coutPuzzleInList(closedList.noeuds, v.puzzle)) or (puzzleInList(openList.noeuds, v.puzzle) and  v.cout >= coutPuzzleInList(openList.noeuds, v.puzzle)):
+                pass
+            else:
+                openList.ajouter(v)
+        print('On avait : {},{}'.format(noeudActuel.heuristique, noeudActuel.cout))
+        closedList.ajouter(noeudActuel)
+        openList.supprimer(noeudActuel)
+    return(0)
 
 def exit(event):
     fenetre.quit()
 
-mon_fichier = open("puzzle/puzzle5.txt", "r")
+def drawPuzzle(frame, puzzle, puzzleGoal):
+
+    FramePuzzle = Frame(frame, borderwidth=2, bg='black')
+    FramePuzzle.pack(side=TOP)
+
+    for coordonne, valeur in puzzle.items():
+        if int(valeur) == 0:
+            background = 'black'
+        elif int(valeur) == int(puzzleGoal[coordonne[0], coordonne[1]]) :
+            background = 'green'
+        else :
+            background = 'red'
+        canvas = Canvas(FramePuzzle, width=window / w_tab, height=window / h_tab, background=background, highlightthickness=0)
+        txt = canvas.create_text((window / w_tab) / 2, (window / h_tab) / 2, text='%s' % (valeur), font="Arial 16 italic", fill="black")
+        canvas.grid(row=coordonne[0], column=coordonne[1], padx=1, pady=1, ipadx=0, ipady=0)
+
+
+mon_fichier = open("puzzle/puzzle3.txt", "r")
 contenu = mon_fichier.read()
 contenu = contenu.split('\n')
 
@@ -27,7 +196,7 @@ for i, elt in enumerate(contenu):
     elt = elt.split()
     h_tab = i
     for n,subElt in enumerate (elt):
-        puzzle[i + 1, n + 1] = subElt
+        puzzle[i, n] = subElt
         w_tab = n
 puzzle = OrderedDict(sorted(puzzle.items(), key=lambda t: t[0]))
 
@@ -99,41 +268,26 @@ FrameBase.pack(padx=50, pady=50)
 FrameInitial = Frame(FrameBase, borderwidth=2, bg='black')
 FrameInitial.grid(row=0, column=0, padx=10)
 
-Label(FrameInitial, text="Initial state",bg='black', fg='white', font="Times 20 italic").pack(fill=X)
+Label(FrameInitial, text="Steps",bg='black', fg='white', font="Times 20 italic").pack(fill=X)
 
-FramePuzzle = Frame(FrameInitial, borderwidth=2, bg='black')
-FramePuzzle.pack(side=BOTTOM)
+FrameRPuzzle = Frame(FrameInitial, borderwidth=2, bg='black')
+FrameRPuzzle.pack(side=BOTTOM)
 
-for coordonne, valeur in puzzle.items():
-    if int(valeur) == 0:
-        background = 'black'
-    elif int(valeur) == int(puzzleGoal[coordonne[0] - 1, coordonne[1] - 1]) :
-        background = 'green'
-    else :
-        background = 'red'
-    canvas = Canvas(FramePuzzle, width=window / w_tab, height=window / h_tab, background=background, highlightthickness=0)
-    txt = canvas.create_text((window / w_tab) / 2, (window / h_tab) / 2, text='%s' % (valeur), font="Arial 16 italic", fill="black")
-    canvas.grid(row=coordonne[0], column=coordonne[1], padx=1, pady=1, ipadx=0, ipady=0)
+# drawPuzzle(FrameRPuzzle, puzzle, puzzleGoal)
 
 FrameGoal = Frame(FrameBase, borderwidth=2, bg='black')
 FrameGoal.grid(row=0, column=1, padx=10)
 
 Label(FrameGoal, text="Goal state",bg='black', fg='white', font="Times 20 italic").pack(fill=X)
 
-FramePuzzle2 = Frame(FrameGoal, borderwidth=2, bg='black')
-FramePuzzle2.pack(side=BOTTOM)
-
-for coordonne, valeur in puzzleGoal.items():
-    if int(valeur) == 0:
-        background = 'black'
-    else:
-        background = 'green'
-    canvas = Canvas(FramePuzzle2, width=window / w_tab, height=window / h_tab, background=background, highlightthickness=0)
-    txt = canvas.create_text((window / w_tab) / 2, (window / h_tab) / 2, text='%s' % (valeur), font="Arial 16 italic", fill="black")
-	# canvas.pack()
-    canvas.grid(row=coordonne[0], column=coordonne[1], padx=1, pady=1, ipadx=0, ipady=0)
+drawPuzzle(FrameGoal, puzzleGoal, puzzleGoal)
 
 fenetre.bind("<Escape>", exit)
+
+# FrameVoisin = Frame(fenetre, borderwidth=2, bg='black')
+# FrameVoisin.pack(side=TOP)
+
+# Label(FrameVoisin, text="Voisins",bg='black', fg='white', font="Times 20 italic").pack(fill=X)
 
 # fenetre.mainloop()
 
@@ -141,113 +295,22 @@ fenetre.bind("<Escape>", exit)
 
 #algo de resolution
 
-class Noeud:
-    """docstring for Noeud"""
-    def __init__(self, puzzle, cout, heuristique):
-        self.puzzle = puzzle
-        self.cout = cout
-        self.heuristique = heuristique
-        
+# Label(fenetre, text="texte").pack()
+Button(fenetre, text="supprime", command=(lambda : onSup(FrameRPuzzle))).pack()
+Button(fenetre, text="draw", command=(lambda : drawPuzzle(FrameRPuzzle, puzzle, puzzleGoal))).pack()
 
-class File:
+# fenetre.mainloop()
 
-    def __init__(self):
-        self.noeuds = []    # creates a new empty list
+if (loop() == 1):
+    print('Reussi')
+else:
+    print('Rate')
 
-    def ajouter(self, noeud):
-        self.noeuds.append(noeud)
+# print ("Start : {}".format(time.ctime()))
+# time.sleep(0.5)
+# print ("End : {}".format(time.ctime()))
 
-    def depiler(self):
-        n = 0
-        while self.noeuds[n] :
-            n += 1
-        return self.noeuds[n]
-
-
-
-def compare2Noeuds(n1, n2):
-    if n1.heuristique < n2.heuristique :
-        return 1
-    elif n1.heuristique == n2.heuristique :
-        return 0
-    else :
-        return -1
-
-def heuristique(puzzle, puzzleGoal):
-    commun = 0;
-    items = 0;
-    for coordonne, valeur in puzzle.items():
-        items += 1
-        if int(valeur) == int(puzzleGoal[coordonne[0] - 1, coordonne[1] - 1]):
-            commun += 1
-    return items - commun
-
-def createVoisin(noeud, oldPos0, newPos0):
-    print("{} {}".format(oldPos0, newPos0))
-    voisin = Noeud(noeud.puzzle, noeud.cout + 1, noeud.heuristique)
-    print("{}".format(findCoordonne0(voisin.puzzle)))
-    tmp = voisin.puzzle[oldPos0]
-    voisin.puzzle[oldPos0] = voisin.puzzle[newPos0]
-    voisin.puzzle[newPos0] = tmp
-    print("ICI coordonne0 = {}".format(findCoordonne0(voisin.puzzle)))
-    return voisin
-
-def printPuzzle():
-    return
-
-def findCoordonne0(puzzle):
-    for cle, valeur in puzzle.items():
-        if int(valeur) == 0:
-            return cle
-
-def voisins(noeud):
-    voisins = []
-    coordonne0 = (-1,-1);
-    coordonneMax = (-1,-1);
-    for cle, valeur in noeud.puzzle.items():
-        if int(valeur) == 0:
-            coordonne0 = cle
-        coordonneMax = cle
-    # if coordonne0[1] > 1:
-    #     voisins.append(createVoisin(noeud, coordonne0, (coordonne0[0], coordonne0[1] - 1)))
-    if coordonne0[1] < coordonneMax[1]:
-        voisins.append(createVoisin(noeud, coordonne0, (coordonne0[0], coordonne0[1] + 1)))
-    if coordonne0[0] > 1:
-        voisins.append(createVoisin(noeud, coordonne0, (coordonne0[0] - 1, coordonne0[1])))
-    if coordonne0[0] < coordonneMax[0]:
-        voisins.append(createVoisin(noeud, coordonne0, (coordonne0[0] + 1, coordonne0[1])))
-    # FrameVoisin = Frame(fenetre, borderwidth=2, bg='black')
-    # FrameVoisin.pack(side=LEFT)
-    # for noeud in voisins:
-    #     print("coordonne0 = {}".format(findCoordonne0(noeud.puzzle)))
-    #     for coordonne, valeur in noeud.puzzle.items():
-    #         if int(valeur) == 0:
-    #             background = 'black'
-    #         elif int(valeur) == int(puzzleGoal[coordonne[0] - 1, coordonne[1] - 1]) :
-    #             background = 'green'
-    #         else :
-    #             background = 'red'
-    #         canvas = Canvas(FrameVoisin, width=window / w_tab, height=window / h_tab, background=background, highlightthickness=0)
-    #         txt = canvas.create_text((window / w_tab) / 2, (window / h_tab) / 2, text='%s' % (valeur), font="Arial 16 italic", fill="black")
-    #         canvas.grid(row= coordonne[0], column=coordonne[1], padx=1, pady=1, ipadx=0, ipady=0)
-    # print("coordonne0 = {}\ncoordonneMax = {}".format(coordonne0, coordonneMax))
-
-
-
-noeudActuel = Noeud(puzzle, 0, 0)
-voisins(noeudActuel)
-
-# closedList = File()
-# openList = File()
-# openList.ajouter(noeudActuel)
-# n = 0
-# while openList.noeuds[n]:
-#     noeudActuel = openList.depiler()
-#     if heuristique(noeudActuel.puzzle, puzzleGoal) == 0:
-#         return 1
-#     for v in :
-
-
+# fenetre.update()
 fenetre.mainloop()
 
 fenetre.destroy()
