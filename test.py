@@ -7,7 +7,7 @@ from collections import OrderedDict
 import time
 
 class Noeud:
-    """docstring for Noeud"""
+
     def __init__(self, puzzle, cout, heuristique):
         self.puzzle = puzzle
         self.cout = cout
@@ -47,14 +47,21 @@ class File:
 
 
 def compare2Noeuds(n1, n2):
-    if n1.heuristique < n2.heuristique or (n1.heuristique == n2.heuristique and n1.cout < n2.cout):
+    if (n1.heuristique + n1.cout < n2.heuristique + n2.cout) or (n1.heuristique + n1.cout == n2.heuristique + n2.cout and n1.cout > n2.cout):
         return 1
-    elif n1.heuristique == n2.heuristique and n1.cout == n2.cout:
+    elif n1.heuristique + n1.cout == n2.heuristique + n2.cout:
         return 0
     else :
         return -1
 
-def heuristique(puzzle, puzzleGoal):
+def hammingHeuristique(puzzle, puzzleGoal):
+    bad = 0;
+    for coordonne, valeur in puzzle.items():
+        if int(valeur) != 0 and int(valeur) != int(puzzleGoal[coordonne[0], coordonne[1]]):
+            bad += 1
+    return bad
+
+def manhattanHeuristique(puzzle, puzzleGoal):
     commun = 0;
     items = 0;
     for coordonne, valeur in puzzle.items():
@@ -69,7 +76,7 @@ def createVoisin(noeud, oldPos0, newPos0):
     # print('oldPos0 = {}, newPos0 = {}'.format(oldPos0, newPos0))
     voisin.puzzle[oldPos0] = voisin.puzzle[newPos0]
     voisin.puzzle[newPos0] = tmp
-    voisin.heuristique = heuristique(voisin.puzzle, puzzleGoal)
+    voisin.heuristique = hammingHeuristique(voisin.puzzle, puzzleGoal)
     return voisin
 
 def findCoordonne0(puzzle):
@@ -89,7 +96,7 @@ def voisins(noeud):
     # print('1    coordonne0 : {},{}'.format(coordonne0[0], coordonne0[1] - 1))
     # print('2    coordonne0 : {},{}'.format(coordonne0[0], coordonne0[1] + 1))
     # print('3    coordonne0 : {},{}'.format(coordonne0[0] - 1, coordonne0[1]))
-    print('4    coordonne0 : {},{}\n\n'.format(coordonne0[0] + 1, coordonne0[1]))
+    # print('4    coordonne0 : {},{}\n\n'.format(coordonne0[0] + 1, coordonne0[1]))
     if coordonne0[1] >= 1:
         # print('1    coordonne0 : {},{}'.format(coordonne0[0], coordonne0[1] - 1))
         voisins.append(createVoisin(noeud, coordonne0, (coordonne0[0], coordonne0[1] - 1)))
@@ -126,6 +133,16 @@ def onSup(frame):
     for w in frame.winfo_children():
         w.destroy()
 
+def printInfoNoeud(noeud):
+    print('Cout: {}\nHeuristique: {}\n0 Position: {}\n\n'.format(noeud.cout, noeud.heuristique, findCoordonne0(noeud.puzzle)))
+
+def printInfoList(list):
+    i = 1;
+    for noeud in list:
+        print('Noeud #{}:\n'.format(i))
+        i += 1
+        printInfoNoeud(noeud)
+
 def loop():
     
     noeudActuel = Noeud(puzzle, 0, 0)
@@ -134,25 +151,38 @@ def loop():
     openList = File("openList")
     openList.ajouter(noeudActuel)
     i = 0
-    while openList.max > 0:
+    while openList.max > 0 and i < 500:
         i += 1
         print('Boucle #{}'.format(i))
+        # printInfoList(openList.noeuds)
         # noeudActuel = openList.noeuds[0]
         noeudActuel = openList.depiler()
-        onSup(FrameRPuzzle)
+        print('Noeud actuel:\n')
+        printInfoNoeud(noeudActuel)
+        # onSup(FrameRPuzzle)
         # print ("Start : {}".format(time.ctime()))
-        time.sleep(0.2)
+        # time.sleep(0.2)
         # print ("End : {}".format(time.ctime()))
-        drawPuzzle(FrameRPuzzle, noeudActuel.puzzle, puzzleGoal)
-        fenetre.update()
-        if heuristique(noeudActuel.puzzle, puzzleGoal) == 0:
+        # drawPuzzle(FrameRPuzzle, noeudActuel.puzzle, puzzleGoal)
+        # fenetre.update()
+        if hammingHeuristique(noeudActuel.puzzle, puzzleGoal) == 0:
             return(1)
+        v_i = 0
         for v in voisins(noeudActuel):
+            print('openList:\n')
+            printInfoList(openList.noeuds)
+            print('closedList:\n')
+            printInfoList(closedList.noeuds)
+            print('noeud voisin #{}:\n'.format(v_i))
+            printInfoNoeud(v)
+            v_i += 1
             if (puzzleInList(closedList.noeuds, v.puzzle) and v.cout >= coutPuzzleInList(closedList.noeuds, v.puzzle)) or (puzzleInList(openList.noeuds, v.puzzle) and  v.cout >= coutPuzzleInList(openList.noeuds, v.puzzle)):
+                print('pass')
                 pass
             else:
+                print('add')
                 openList.ajouter(v)
-        print('On avait : {},{}'.format(noeudActuel.heuristique, noeudActuel.cout))
+        # print('On avait : {},{}'.format(noeudActuel.heuristique, noeudActuel.cout))
         closedList.ajouter(noeudActuel)
         openList.supprimer(noeudActuel)
     return(0)
@@ -177,7 +207,7 @@ def drawPuzzle(frame, puzzle, puzzleGoal):
         canvas.grid(row=coordonne[0], column=coordonne[1], padx=1, pady=1, ipadx=0, ipady=0)
 
 
-mon_fichier = open("puzzle/puzzle3.txt", "r")
+mon_fichier = open("puzzle/puzzle3-2.txt", "r")
 contenu = mon_fichier.read()
 contenu = contenu.split('\n')
 
@@ -272,15 +302,17 @@ Label(FrameInitial, text="Steps",bg='black', fg='white', font="Times 20 italic")
 
 FrameRPuzzle = Frame(FrameInitial, borderwidth=2, bg='black')
 FrameRPuzzle.pack(side=BOTTOM)
+# Label(FrameRPuzzle, text="1").pack()
+# Label(FrameRPuzzle, text="2").pack()
 
 # drawPuzzle(FrameRPuzzle, puzzle, puzzleGoal)
 
-FrameGoal = Frame(FrameBase, borderwidth=2, bg='black')
-FrameGoal.grid(row=0, column=1, padx=10)
+# FrameGoal = Frame(FrameBase, borderwidth=2, bg='black')
+# FrameGoal.grid(row=0, column=1, padx=10)
 
-Label(FrameGoal, text="Goal state",bg='black', fg='white', font="Times 20 italic").pack(fill=X)
+# Label(FrameGoal, text="Goal state",bg='black', fg='white', font="Times 20 italic").pack(fill=X)
 
-drawPuzzle(FrameGoal, puzzleGoal, puzzleGoal)
+# drawPuzzle(FrameGoal, puzzleGoal, puzzleGoal)
 
 fenetre.bind("<Escape>", exit)
 
@@ -293,11 +325,11 @@ fenetre.bind("<Escape>", exit)
 
 # fenetre.destroy()
 
-#algo de resolution
+# algo de resolution
 
 # Label(fenetre, text="texte").pack()
-Button(fenetre, text="supprime", command=(lambda : onSup(FrameRPuzzle))).pack()
-Button(fenetre, text="draw", command=(lambda : drawPuzzle(FrameRPuzzle, puzzle, puzzleGoal))).pack()
+# Button(fenetre, text="supprime", command=(lambda : onSup(FrameRPuzzle))).pack()
+# Button(fenetre, text="draw", command=(lambda : drawPuzzle(FrameRPuzzle, puzzle, puzzleGoal))).pack()
 
 # fenetre.mainloop()
 
@@ -311,9 +343,9 @@ else:
 # print ("End : {}".format(time.ctime()))
 
 # fenetre.update()
-fenetre.mainloop()
+# fenetre.mainloop()
 
-fenetre.destroy()
+# fenetre.destroy()
 
         
 
