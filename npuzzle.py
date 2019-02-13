@@ -244,6 +244,29 @@ def findCoordonneValue(valeur, puzzleGoal):
 		if int(valeur) == int(valeurGoal):
 			return coordonneGoal
 
+def numOnTheWay(start, end, puzzle):
+	values = []
+	# print("start:", start, "end", end)
+	if start[0] == end[0]:
+		values.append(puzzle[start])
+		while start[1] != end[1]:
+			if start[1] > end[1]:
+				start = (start[0], start[1] - 1)
+			else:
+				start = (start[0], start[1] + 1)
+			# print("ici",start)
+			values.append(puzzle[start])
+	elif start[1] == end[1]:
+		values.append(puzzle[start])
+		while start[0] != end[0]:
+			if start[0] > end[0]:
+				start = (start[0] - 1, start[1])
+			else:
+				start = (start[0] + 1, start[1])
+			# print("la",start)
+			values.append(puzzle[start])
+	return values
+
 def linearConflict(puzzle, puzzleGoal):
 	print("In linearConflict")
 	heuristique = 0;
@@ -276,19 +299,31 @@ def linearConflict(puzzle, puzzleGoal):
 		otherCoordonneGoal = findCoordonneValue(otherValue, puzzleGoal)
 		print("\nvalue = ", valeur, "coordonne actuelle =", coordonne, "coordonneGoal", coordonneGoal)
 		print("otherValue = ", otherValue, "coordonne actuelle =", otherValueCoordonne, "coordonneGoal", otherCoordonneGoal)
+
+		values = numOnTheWay(coordonne, coordonneGoal, puzzle)
+		print("On affiche les value")
+		for value in values:
+			print(value)
+
+		test = 0
 		if (coordonne[0] == coordonneGoal[0] and coordonne[1] + 2 == coordonneGoal[1]):
-			coordonneGoal = tuple(coordonneGoal[0], coordonneGoal[1] - 1)
+			test = 1
+			coordonneGoal = (coordonneGoal[0], coordonneGoal[1] - 1)
 		elif (coordonne[0] == coordonneGoal[0] and coordonne[1] - 2 == coordonneGoal[1]):
-			coordonneGoal = tuple(coordonneGoal[0], coordonneGoal[1] + 1)
+			test = 1
+			coordonneGoal = (coordonneGoal[0], coordonneGoal[1] + 1)
 		elif (coordonne[1] == coordonneGoal[1] and coordonne[0] + 2 == coordonneGoal[0]):
-			coordonneGoal[0] -= 1
+			test = 1
+			coordonneGoal = (coordonneGoal[0] - 1, coordonneGoal[1])
 		elif (coordonne[1] == coordonneGoal[1] and coordonne[0] - 2 == coordonneGoal[0]):
-			coordonneGoal[0] += 1
-		otherValue = puzzle[coordonneGoal[0], coordonneGoal[1]]
-		otherValueCoordonne = findCoordonneValue(otherValue, puzzle)
-		otherCoordonneGoal = findCoordonneValue(otherValue, puzzleGoal)
-		print("\nvalue = ", valeur, "coordonne actuelle =", coordonne, "coordonneGoal", coordonneGoal)
-		print("otherValue = ", otherValue, "coordonne actuelle =", otherValueCoordonne, "coordonneGoal", otherCoordonneGoal)
+			test = 1
+			coordonneGoal = (coordonneGoal[0] + 1, coordonneGoal[1])
+		if test == 1:
+			otherValue = puzzle[coordonneGoal[0], coordonneGoal[1]]
+			otherValueCoordonne = findCoordonneValue(otherValue, puzzle)
+			otherCoordonneGoal = findCoordonneValue(otherValue, puzzleGoal)
+			print("\n2: value = ", valeur, "coordonne actuelle =", coordonne, "coordonneGoal", coordonneGoal)
+			print("2: otherValue = ", otherValue, "coordonne actuelle =", otherValueCoordonne, "coordonneGoal", otherCoordonneGoal)
 		
 def createVoisin(noeud, oldPos0, newPos0, puzzleGoal):
     voisin = Noeud(noeud.puzzle.copy(), noeud.cout + 1, 0, noeud)
