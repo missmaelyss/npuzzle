@@ -247,6 +247,7 @@ def findCoordonneValue(valeur, puzzleGoal):
 
 def numOnTheWay(start, end, puzzle):
 	values = []
+	# print("start:", start, "end", end)
 	if start[0] == end[0]:
 		values.append(puzzle[start])
 		while start[1] != end[1]:
@@ -254,6 +255,7 @@ def numOnTheWay(start, end, puzzle):
 				start = (start[0], start[1] - 1)
 			else:
 				start = (start[0], start[1] + 1)
+			# print("ici",start)
 			values.append(puzzle[start])
 	elif start[1] == end[1]:
 		values.append(puzzle[start])
@@ -262,66 +264,42 @@ def numOnTheWay(start, end, puzzle):
 				start = (start[0] - 1, start[1])
 			else:
 				start = (start[0] + 1, start[1])
+			# print("la",start)
 			values.append(puzzle[start])
 	return values
 
-def linearConflict(puzzle, puzzleGoal):
-	print("In linearConflict")
-	heuristique = 0;
-	conflit = 0
+def lenTab(tab):
+	n = 0
+	for truc in tab:
+		n += 1
+	return n
 
-	y = 0
-	while y < 3:
-		x = 0
-		s = ""
-		while x < 3:
-			s += str(puzzle[y, x])
-			s += ' '
-			# print("puzzle[",x,",",y,'] = ', puzzle[y,x])
-			x += 1
-		x = 0
-		s += '	'
-		while x < 3:
-			s += str(puzzleGoal[y , x])
-			s += ' '
-			# print("puzzle[",x,",",y,'] = ', puzzle[y,x])
-			x += 1
-		print(s)
-		y += 1
+def isOnTheWay(values, valueToFind):
+	if values == []:
+		return 0
+	for value in values:
+		if value == valueToFind:
+			return 1
+	return 0
+
+def linearConflict(puzzle, puzzleGoal):
+	heuristique = 0
+	conflit = 0
 
 	for coordonne, valeur in puzzle.items():
 		heuristique += manhattanDistance(valeur, coordonne, puzzle, puzzleGoal)
 		coordonneGoal = findCoordonneValue(valeur, puzzleGoal)
-		otherValue = puzzle[coordonneGoal[0], coordonneGoal[1]]
-		otherValueCoordonne = findCoordonneValue(otherValue, puzzle)
-		otherCoordonneGoal = findCoordonneValue(otherValue, puzzleGoal)
-		print("\nvalue = ", valeur, "coordonne actuelle =", coordonne, "coordonneGoal", coordonneGoal)
-		print("otherValue = ", otherValue, "coordonne actuelle =", otherValueCoordonne, "coordonneGoal", otherCoordonneGoal)
-
 		values = numOnTheWay(coordonne, coordonneGoal, puzzle)
-		print("On affiche les value")
 		for value in values:
-			print(value)
+			if int(value) == int(valeur):
+				continue
+			if isOnTheWay(numOnTheWay(findCoordonneValue(value, puzzle), findCoordonneValue(value, puzzleGoal), puzzle), valeur) == 1:
+				conflit += 1
+			elif lenTab(numOnTheWay(findCoordonneValue(value, puzzle), findCoordonneValue(value, puzzleGoal), puzzle)) == 1:
+				conflit += 2
+	return heuristique + conflit
+		
 
-		test = 0
-		if (coordonne[0] == coordonneGoal[0] and coordonne[1] + 2 == coordonneGoal[1]):
-			test = 1
-			coordonneGoal = (coordonneGoal[0], coordonneGoal[1] - 1)
-		elif (coordonne[0] == coordonneGoal[0] and coordonne[1] - 2 == coordonneGoal[1]):
-			test = 1
-			coordonneGoal = (coordonneGoal[0], coordonneGoal[1] + 1)
-		elif (coordonne[1] == coordonneGoal[1] and coordonne[0] + 2 == coordonneGoal[0]):
-			test = 1
-			coordonneGoal = (coordonneGoal[0] - 1, coordonneGoal[1])
-		elif (coordonne[1] == coordonneGoal[1] and coordonne[0] - 2 == coordonneGoal[0]):
-			test = 1
-			coordonneGoal = (coordonneGoal[0] + 1, coordonneGoal[1])
-		if test == 1:
-			otherValue = puzzle[coordonneGoal[0], coordonneGoal[1]]
-			otherValueCoordonne = findCoordonneValue(otherValue, puzzle)
-			otherCoordonneGoal = findCoordonneValue(otherValue, puzzleGoal)
-			print("\n2: value = ", valeur, "coordonne actuelle =", coordonne, "coordonneGoal", coordonneGoal)
-			print("2: otherValue = ", otherValue, "coordonne actuelle =", otherValueCoordonne, "coordonneGoal", otherCoordonneGoal)
 		
 def createVoisin(noeud, oldPos0, newPos0, puzzleGoal):
     voisin = Noeud(noeud.puzzle.copy(), noeud.cout + 1, 0, noeud)
@@ -329,7 +307,8 @@ def createVoisin(noeud, oldPos0, newPos0, puzzleGoal):
     voisin.puzzle[oldPos0] = voisin.puzzle[newPos0]
     voisin.puzzle[newPos0] = tmp
     # voisin.heuristique = hammingHeuristique(voisin.puzzle, puzzleGoal)
-    voisin.heuristique = manhattanHeuristique(voisin.puzzle, puzzleGoal)
+    # voisin.heuristique = manhattanHeuristique(voisin.puzzle, puzzleGoal)
+    voisin.heuristique = linearConflict(voisin.puzzle, puzzleGoal)
     # linearConflict(voisin.puzzle, puzzleGoal)
     return voisin
 
@@ -395,7 +374,7 @@ def printInfoNoeud(noeud):
     print('Cout: {}\nHeuristique: {}\n0 Position: {}\n\n'.format(noeud.cout, noeud.heuristique, findCoordonne0(noeud.puzzle)))
 
 def printInfoList(list, infoOn):
-    i = 1;
+    i = 1
     print(list.name,":\n")
     for noeud in list.noeuds:
         print('Noeud #{}:\n'.format(i))
@@ -404,23 +383,14 @@ def printInfoList(list, infoOn):
         # printInfoNoeud(noeud)
 
 def main():
-	window = 200;
+	window = 200
 
 	h_tab = variable(0)
 	w_tab = variable(0)
 
-	puzzleInitial = createInitiateState("puzzle/puzzle3.txt", h_tab , w_tab)
+	puzzleInitial = createInitiateState("puzzle/puzzle4", h_tab , w_tab)
 
-	# puzzleGoal = createGoalState(h_tab , w_tab)
-
-	puzzleGoal = createLinearGoal(h_tab , w_tab)
-
-	# fenetre = initWindow(puzzleInitial, puzzleGoal, window, w_tab, h_tab)
-	
-	# FrameRPuzzle = initFrame(fenetre)
-	# fenetre.mainloop()
-
-	# fenetre.destroy()
+	puzzleGoal = createGoalState(h_tab , w_tab)
 
 	openList = List("openList")
 	closedList = List("closedList")
@@ -429,21 +399,9 @@ def main():
 	
 	openList.ajouter(noeudActuel)
 	
-	i = 0
-
-	# linearConflict(noeudActuel.puzzle, puzzleGoal)
-
-	while openList.max > 0 and i < 10000:
-		
-		i += 1
-		# print('Boucle #{}\n'.format(i))
+	while openList.max > 0:
 		
 		noeudActuel = openList.depiler()
-
-		# print("noeudActuel : \n")
-		# printNoeud(noeudActuel, 1)
-
-		# print("diff = ", hammingHeuristique(noeudActuel.puzzle, puzzleGoal), "\n")
 
 		if hammingHeuristique(noeudActuel.puzzle, puzzleGoal) == 0:
 			finalList = List("finalList")
@@ -454,20 +412,6 @@ def main():
 			print("Reussi")
 			printInfoList(finalList, 0)
 			visual.visual(w_tab.Int(), puzzleGoal, finalList)
-			print("nb boucle : ", i)
-
-			# fenetre = initWindow(puzzleInitial, puzzleGoal, window, w_tab, h_tab)
-
-			# FrameRPuzzle = initFrame(fenetre)
-
-			# for noeud in finalList.noeuds:
-			# 	drawPuzzle(FrameRPuzzle, noeud.puzzle, puzzleGoal, window, w_tab, h_tab)
-			# 	time.sleep(0.5)
-			# 	fenetre.update()
-			# 	onSup(FrameRPuzzle)
-
-			# drawPuzzle(FrameRPuzzle, noeud.puzzle, puzzleGoal, window, w_tab, h_tab)
-			# fenetre.mainloop()
 			return 1
 
 		for v in findVoisins(noeudActuel, puzzleGoal):
@@ -482,8 +426,3 @@ def main():
 		openList.supprimer(noeudActuel)
 
 main()
-
-# fenetre.mainloop()
-
-
-
