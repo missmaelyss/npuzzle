@@ -1,49 +1,73 @@
-from random import randint
-import tkinter as tk
+from Tkinter import * 
+from time import * 
+ 
+def initialize(title = 'MonApplication'):
+  global app
+  app = Tk()
+  app.title(title)
+  app.geometry('640x500')
+ 
+  #Canvas
+  global can
+  # can = Label(app,text = 'Appuyer sur N pour demarrer')
+  can = Canvas(app, width = 640, height = 480, bg = 'green')
+  can.pack()
+ 
+  #Label
+  new = Label(app,text = 'Appuyer sur N pour demarrer')
+  new.pack()
+ 
+  #Evenement
+  app.bind_all('<n>',Nouveau)
+  app.bind_all('<q>',Quit)
 
-def nombre_choisi(event):
-    "Callback quand le joueur a entré un nombre."
-    nbre_choisi = int(reponse.get())
-    reponse.delete(0, tk.END)
-    proposition["text"] = nbre_choisi
-    if nombre_secret > nbre_choisi:
-        resultat["text"] = "Le nombre est plus grand"
-    elif nombre_secret < nbre_choisi:
-        resultat["text"] = "Le nombre est plus petit"
-    else:
-        # On enlève les éléments dont on n'a plus besoin
-        lbl_reponse.destroy()
-        reponse.destroy()
-        # On replace les Labels `proposition` et `resultat` dans la ligne
-        # en dessous du titre
-        proposition.grid_forget()
-        proposition.grid(row=1, column=0)
-        resultat.grid_forget()
-        resultat.grid(row=1, column=1)
-        # On configure le label avec le texte voulu, dans la font voulue et
-        # dans la couleur désirée.
-        resultat.config(text="Tu as trouvé le nombre. Bravo!",
-                        font=("", 12),
-                        fg="green")
-
-
-app = tk.Tk()
-titre = tk.Label(app, text="Devine le nombre auquel je pense", font=("", 16))
-titre.grid(row=0, columnspan=2, pady=8)
-
-nombre_secret = randint(0, 100) + 1
-
-lbl_reponse = tk.Label(app, text="Choisi un nombre entre 1 et 100 inclus:")
-lbl_reponse.grid(row=1, column=0, pady=5, padx=5)
-
-reponse = tk.Entry(app)
-reponse.grid(row=1, column=1, pady=5, padx=5)
-reponse.bind("<Return>", nombre_choisi)
-
-proposition = tk.Label(app, text="")
-proposition.grid(row=2, column=0, pady=5, padx=5)
-
-resultat = tk.Label(app, text="")
-resultat.grid(row=2, column=1, pady=5, padx=5)
-
+  global x,y
+  x , y = 50, 50
+ 
+def Nouveau(event): #Quand on appui sur N
+  Animate()
+ 
+ 
+ 
+ 
+def affiche(x,y):
+  drawcircle(x,y,30)
+  can.update()
+ 
+def drawcircle(x,y,rad):
+  global boule
+  # boule = can.create_oval(x-rad, y-rad, x+rad, y+rad,fill = 'red')photo = PhotoImage(file="pics/test.gif")
+  photo = PhotoImage(file="pics/test.gif")
+  photo.crop(10,10)
+  boule = can.create_image(x, y, photo)
+ 
+def Animate():
+  global dx,dy #Les directions
+  global x,y 
+  dx,dy = 1,1
+ 
+  while 1:
+    x = x+ (dx* 10)
+    y = y+ (dy*10)
+ 
+    if x > 610:
+      dx = -dx
+    if x < 30:
+      dx = -dx
+    if y >450:
+      dy = -dy
+    if y<30:
+      dy = -dy
+ 
+    can.after(30,affiche(x,y))
+    can.delete(boule)
+ 
+ 
+def Quit(event):
+  app.destroy()
+ 
+ 
+#Le main
+initialize('Une balle qui rebondit')
 app.mainloop()
+app.destroy()
