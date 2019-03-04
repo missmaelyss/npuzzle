@@ -51,8 +51,9 @@ class Board(Frame):
 		for noeud in finalList.noeuds:
 			self.tiles.orderByPuzzle(noeud.puzzle)
 			self.tiles.show(0)
+			time.sleep(20/int(finalList.max))
 			parent.update()
-			time.sleep(0.5)
+		time.sleep(20/int(finalList.max) * 2)
 		self.tiles.show(1)
 
 	def openImage(self, image):
@@ -116,5 +117,3 @@ def visual(size,puzzleGoal,finalList):
 	root.wm_title("NPuzzle")
 	Main(root,size,puzzleGoal, finalList)
 	root.mainloop()
-
-# visual()

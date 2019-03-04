@@ -31,33 +31,27 @@ class Noeud:
 class List:
 
     def __init__(self, name):
-        self.noeuds = []    # creates a new empty list
+        self.noeuds = []
         self.max = 0
         self.name = name
 
     def ajouter(self, noeud):
         self.noeuds.insert(0, noeud)
-        # self.noeuds.append(noeud)
         self.max += 1
-        # print('On vient d\'ajouter un element a {}, on en a actuellement {}'.format(self.name, self.max))
 
     def supprimer(self, noeud):
         self.noeuds.remove(noeud)
         self.max -= 1
-        # print('On vient de supprimer un element a {}, on en a actuellement {}'.format(self.name, self.max))
 
     def depiler(self):
         if self.max == 0:
             return -1
         ret = self.noeuds[0]
         n = 0
-        # print('In depiler')
         while n < self.max:
-            # print('noeuds[{}]:  {},{}\nret: {},{}'.format(n, self.noeuds[n].heuristique, self.noeuds[n].cout, ret.heuristique, ret.cout))
             if compare2Noeuds(self.noeuds[n], ret) == 1:
                 ret = self.noeuds[n]
             n += 1
-        # print('On return : {},{}'.format(ret.heuristique, ret.cout))
         return ret
 
 def createInitiateState(file, w_tab, h_tab):
@@ -170,14 +164,6 @@ def initWindow(initialState, goalState, window, w_tab, h_tab):
 
 	fenetre['bg']='black'
 
-	# FrameBase = Frame(fenetre, borderwidth=2, bg='black')
-	# FrameBase.pack(padx=50, pady=50)
-
-	# FrameInitial = Frame(FrameBase, borderwidth=2, bg='black')
-	# FrameInitial.grid(row=0, column=0, padx=10)
-
-	# Label(FrameInitial, text="Steps",bg='black', fg='white', font="Times 20 italic").pack(fill=X)
-
 	FrameRPuzzle = Frame(fenetre, borderwidth=2, bg='black')
 	FrameRPuzzle.pack(side=BOTTOM)
 
@@ -185,9 +171,6 @@ def initWindow(initialState, goalState, window, w_tab, h_tab):
 		fenetre.quit()
 
 	fenetre.bind("<Escape>", exit)
-
-	# Button(fenetre, text="supprime", command=(lambda : onSup(FrameRPuzzle))).pack()
-	# Button(fenetre, text="draw", command=(lambda : drawPuzzle(FrameRPuzzle, initialState, goalState, window, w_tab, h_tab))).pack()
 	return fenetre
 
 def onSup(frame):
@@ -214,9 +197,6 @@ def compare2Noeuds(n1, n2):
     if (n1.heuristique < n2.heuristique) or (n1.heuristique == n2.heuristique and n1.cout < n2.cout):
     	return 1
     return 0
-    # if n1.heuristique + n1.cout < n2.heuristique + n2.cout:
-    # 	return 1
-    # return 0
 
 def hammingHeuristique(puzzle, puzzleGoal):
     heuristique = 0;
@@ -247,7 +227,6 @@ def findCoordonneValue(valeur, puzzleGoal):
 
 def numOnTheWay(start, end, puzzle):
 	values = []
-	# print("start:", start, "end", end)
 	if start[0] == end[0]:
 		values.append(puzzle[start])
 		while start[1] != end[1]:
@@ -255,7 +234,6 @@ def numOnTheWay(start, end, puzzle):
 				start = (start[0], start[1] - 1)
 			else:
 				start = (start[0], start[1] + 1)
-			# print("ici",start)
 			values.append(puzzle[start])
 	elif start[1] == end[1]:
 		values.append(puzzle[start])
@@ -264,7 +242,6 @@ def numOnTheWay(start, end, puzzle):
 				start = (start[0] - 1, start[1])
 			else:
 				start = (start[0] + 1, start[1])
-			# print("la",start)
 			values.append(puzzle[start])
 	return values
 
@@ -306,10 +283,7 @@ def createVoisin(noeud, oldPos0, newPos0, puzzleGoal):
     tmp = voisin.puzzle[oldPos0]
     voisin.puzzle[oldPos0] = voisin.puzzle[newPos0]
     voisin.puzzle[newPos0] = tmp
-    # voisin.heuristique = hammingHeuristique(voisin.puzzle, puzzleGoal)
-    # voisin.heuristique = manhattanHeuristique(voisin.puzzle, puzzleGoal)
     voisin.heuristique = linearConflict(voisin.puzzle, puzzleGoal)
-    # linearConflict(voisin.puzzle, puzzleGoal)
     return voisin
 
 def findVoisins(noeud, puzzleGoal):
@@ -380,7 +354,6 @@ def printInfoList(list, infoOn):
         print('Noeud #{}:\n'.format(i))
         i += 1
         printNoeud(noeud, infoOn)
-        # printInfoNoeud(noeud)
 
 def main():
 	window = 200
@@ -388,7 +361,7 @@ def main():
 	h_tab = variable(0)
 	w_tab = variable(0)
 
-	puzzleInitial = createInitiateState("puzzle/puzzle4", h_tab , w_tab)
+	puzzleInitial = createInitiateState("puzzle/puzzle5.txt", h_tab , w_tab)
 
 	puzzleGoal = createGoalState(h_tab , w_tab)
 
@@ -409,7 +382,6 @@ def main():
 				finalList.ajouter(noeudActuel)
 				noeudActuel = noeudActuel.parent
 
-			print("Reussi")
 			printInfoList(finalList, 0)
 			visual.visual(w_tab.Int(), puzzleGoal, finalList)
 			return 1
