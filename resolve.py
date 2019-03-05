@@ -5,7 +5,8 @@ import pickle
 from tkinter import *
 from collections import OrderedDict
 import time
-import visual
+import visualStart
+import visualFinal
 
 class variable:
 	def __init__(self, val):
@@ -21,7 +22,6 @@ class variable:
 		return self.variable
 
 class Noeud:
-
     def __init__(self, puzzle, cout, heuristique, parent):
         self.puzzle = puzzle
         self.cout = cout
@@ -29,7 +29,6 @@ class Noeud:
         self.parent = parent
 
 class List:
-
     def __init__(self, name):
         self.noeuds = []
         self.max = 0
@@ -53,6 +52,17 @@ class List:
                 ret = self.noeuds[n]
             n += 1
         return ret
+
+class Mode():
+	def __init__(self, heuristique, greedy):
+		self.heuristique = heuristique
+		self.greedy = greedy
+
+	def chooseHeuristique(self, heuristique):
+		self.heuristique = heuristique
+		
+	def switchGreedy(self):
+		self.greedy = int(self.greedy + 1) % 2
 
 def createInitiateState(file, w_tab, h_tab):
 	mon_fichier = open(file, "r")
@@ -153,46 +163,6 @@ def createLinearGoal(w_tab, h_tab):
 	
 	return puzzleGoal
 
-def initFrame(fenetre):
-	FrameRPuzzle = Frame(fenetre, borderwidth=2, bg='black')
-	FrameRPuzzle.pack(side=BOTTOM)
-	return FrameRPuzzle
-
-def initWindow(initialState, goalState, window, w_tab, h_tab):
-
-	fenetre = Tk()
-
-	fenetre['bg']='black'
-
-	FrameRPuzzle = Frame(fenetre, borderwidth=2, bg='black')
-	FrameRPuzzle.pack(side=BOTTOM)
-
-	def exit(event):
-		fenetre.quit()
-
-	fenetre.bind("<Escape>", exit)
-	return fenetre
-
-def onSup(frame):
-    for w in frame.winfo_children():
-        w.destroy()
-
-def drawPuzzle(frame, puzzle, puzzleGoal, window, w_tab, h_tab):
-
-	FramePuzzle = Frame(frame, borderwidth=2, bg='black')
-	FramePuzzle.pack(side=TOP)
-
-	for coordonne, valeur in puzzle.items():
-	    if int(valeur) == 0:
-	        background = 'black'
-	    elif int(valeur) == int(puzzleGoal[coordonne[0], coordonne[1]]) :
-	        background = 'green'
-	    else :
-	        background = 'red'
-	    canvas = Canvas(FramePuzzle, width=window / w_tab.Int(), height=window / h_tab.Int(), background=background, highlightthickness=0)
-	    txt = canvas.create_text((window / w_tab.Int()) / 2, (window / h_tab.Int()) / 2, text='%s' % (valeur), font="Arial 16 italic", fill="black")
-	    canvas.grid(row=coordonne[0], column=coordonne[1], padx=1, pady=1, ipadx=0, ipady=0)
-
 def compare2Noeuds(n1, n2):
     if (n1.heuristique < n2.heuristique) or (n1.heuristique == n2.heuristique and n1.cout < n2.cout):
     	return 1
@@ -276,17 +246,20 @@ def linearConflict(puzzle, puzzleGoal):
 				conflit += 2
 	return heuristique + conflit
 		
-
-		
-def createVoisin(noeud, oldPos0, newPos0, puzzleGoal):
+def createVoisin(noeud, oldPos0, newPos0, puzzleGoal, mode):
     voisin = Noeud(noeud.puzzle.copy(), noeud.cout + 1, 0, noeud)
     tmp = voisin.puzzle[oldPos0]
     voisin.puzzle[oldPos0] = voisin.puzzle[newPos0]
     voisin.puzzle[newPos0] = tmp
-    voisin.heuristique = linearConflict(voisin.puzzle, puzzleGoal)
+    if mode == 1:
+    	voisin.heuristique = hammingHeuristique(voisin.puzzle, puzzleGoal)
+    elif mode == 2:
+    	voisin.heuristique = manhattanHeuristique(voisin.puzzle, puzzleGoal)
+    else:
+    	voisin.heuristique = linearConflict(voisin.puzzle, puzzleGoal)
     return voisin
 
-def findVoisins(noeud, puzzleGoal):
+def findVoisins(noeud, puzzleGoal, mode):
     voisins = []
     coordonne0 = (-1,-1);
     coordonneMax = (-1,-1);
@@ -295,13 +268,13 @@ def findVoisins(noeud, puzzleGoal):
             coordonne0 = cle
         coordonneMax = cle
     if coordonne0[1] >= 1:
-        voisins.append(createVoisin(noeud, coordonne0, (coordonne0[0], coordonne0[1] - 1), puzzleGoal))
+        voisins.append(createVoisin(noeud, coordonne0, (coordonne0[0], coordonne0[1] - 1), puzzleGoal, mode))
     if coordonne0[1] < coordonneMax[1]:
-        voisins.append(createVoisin(noeud, coordonne0, (coordonne0[0], coordonne0[1] + 1), puzzleGoal))
+        voisins.append(createVoisin(noeud, coordonne0, (coordonne0[0], coordonne0[1] + 1), puzzleGoal, mode))
     if coordonne0[0] >= 1:
-        voisins.append(createVoisin(noeud, coordonne0, (coordonne0[0] - 1, coordonne0[1]), puzzleGoal))
+        voisins.append(createVoisin(noeud, coordonne0, (coordonne0[0] - 1, coordonne0[1]), puzzleGoal, mode))
     if coordonne0[0] < coordonneMax[0]:
-        voisins.append(createVoisin(noeud, coordonne0, (coordonne0[0] + 1, coordonne0[1]), puzzleGoal))
+        voisins.append(createVoisin(noeud, coordonne0, (coordonne0[0] + 1, coordonne0[1]), puzzleGoal, mode))
     return voisins
 
 def printPuzzle(puzzle):
@@ -353,48 +326,57 @@ def printInfoList(list, infoOn):
     for noeud in list.noeuds:
         print('Noeud #{}:\n'.format(i))
         i += 1
-        printNoeud(noeud, infoOn)
+        printNoeud(noeud, infoOn)		
 
 def main():
-	window = 200
-
+	start = visualStart.visualStart()
+	mode = Mode(start.heuristique,start.greedy.get())
 	h_tab = variable(0)
 	w_tab = variable(0)
-
-	puzzleInitial = createInitiateState("puzzle/puzzle5.txt", h_tab , w_tab)
-
+	timeComplexity = 0
+	sizeComplexity = 0
+	puzzleInitial = createInitiateState(start.file.get(), h_tab , w_tab)
 	puzzleGoal = createGoalState(h_tab , w_tab)
-
 	openList = List("openList")
 	closedList = List("closedList")
-
 	noeudActuel = Noeud(puzzleInitial, 0, 0, 0)
-	
 	openList.ajouter(noeudActuel)
-	
 	while openList.max > 0:
-		
+		print("ui")
+		timeComplexity += 1
 		noeudActuel = openList.depiler()
-
 		if hammingHeuristique(noeudActuel.puzzle, puzzleGoal) == 0:
 			finalList = List("finalList")
 			while noeudActuel.parent != 0:
 				finalList.ajouter(noeudActuel)
 				noeudActuel = noeudActuel.parent
-
 			printInfoList(finalList, 0)
-			visual.visual(w_tab.Int(), puzzleGoal, finalList)
+			print("Complexity in time:\t", timeComplexity)
+			print("Complexity in size:\t", sizeComplexity)
+			print("OpenList:\t", openList.max)
+			print("ClosedList:\t", closedList.max)
+			print("Moves:\t", finalList.max)
+			visualFinal.visualFinal(w_tab.Int(), puzzleGoal, finalList)
 			return 1
-
-		for v in findVoisins(noeudActuel, puzzleGoal):
+		for v in findVoisins(noeudActuel, puzzleGoal, mode.heuristique):
 			if puzzleInList(closedList.noeuds, v.puzzle) and coutPuzzleInList(closedList.noeuds, v.puzzle) <= v.cout:
 				pass
 			elif puzzleInList(openList.noeuds, v.puzzle) and heuristiquePuzzleInList(openList.noeuds, v.puzzle) <= v.heuristique:
 				pass
 			else:
-				openList.ajouter(v)
-		
+				if mode.greedy == 0:
+					sizeComplexity += 1
+					openList.ajouter(v)
+				else:
+					if better == 0 or compare2Noeuds(v, better) == 1 :
+						better = v
+		if better != 0:
+			sizeComplexity += 1
+			openList.ajouter(better)
 		closedList.ajouter(noeudActuel)
 		openList.supprimer(noeudActuel)
 
 main()
+# start = visualStart.visualStart()
+# print(start.hamming.get(), start.manhattan.get(), start.linear.get(), start.greedy.get(), start.file.get())
+

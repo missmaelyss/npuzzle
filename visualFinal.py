@@ -4,7 +4,7 @@ import os
 from PIL import Image
 from PIL import ImageTk
 import time
-import resolve
+# import resolve
 
 class Tiles():
 	def __init__(self, rack):
@@ -79,7 +79,6 @@ class Board(Frame):
 				i += 1
 		return tiles
 
-
 class Main():
 	def __init__(self, parent, size, puzzleGoal, finalList):
 		self.parent = parent
@@ -112,7 +111,7 @@ class Main():
 	def browse(self):
 		self.image.set(filedialog.askopenfilename(title="Select Image",filetypes = (("jpeg files","*.gif"),("all files","*.*"))))
 
-def visual(size,puzzleGoal,finalList):
+def visualFinal(size,puzzleGoal,finalList):
 	root = Tk()
 	root.wm_title("NPuzzle")
 	Main(root,size,puzzleGoal, finalList)
