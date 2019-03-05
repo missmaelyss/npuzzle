@@ -29,26 +29,52 @@ class Noeud:
         self.parent = parent
 
 class List:
-    def __init__(self, name):
+    def __init__(self, name, type):
         self.noeuds = []
         self.max = 0
         self.name = name
+        self.type = type
 
     def ajouter(self, noeud):
-        self.noeuds.insert(0, noeud)
+        # print("On a ajouter un noeud a",self.name,"on en a donc", self.max)
+        if self.type == 1:
+        	n = 0
+        	for node in self.noeuds:
+        		if (noeud.heuristique < node.heuristique) or (noeud.heuristique == node.heuristique and noeud.cout < node.cout):
+        			self.noeuds.insert(n, noeud)
+        			break
+        		n += 1
+        	if n == 0:
+        		self.noeuds.insert(n, noeud)
+        else :
+        	self.noeuds.insert(0, noeud)
         self.max += 1
 
     def supprimer(self, noeud):
         self.noeuds.remove(noeud)
         self.max -= 1
 
-    def depiler(self):
+    def getBest(self):
+    	return self.noeuds[0]
+
+    def smallHeuristique(self):
         if self.max == 0:
             return -1
         ret = self.noeuds[0]
         n = 0
         while n < self.max:
             if compare2Noeuds(self.noeuds[n], ret) == 1:
+                ret = self.noeuds[n]
+            n += 1
+        return ret
+
+    def smallCost(self):
+        if self.max == 0:
+            return -1
+        ret = self.noeuds[0]
+        n = 0
+        while n < self.max:
+            if compare2Cost(self.noeuds[n], ret) == 1:
                 ret = self.noeuds[n]
             n += 1
         return ret
@@ -168,6 +194,11 @@ def compare2Noeuds(n1, n2):
     	return 1
     return 0
 
+def compare2Cost(n1, n2):
+    if (n1.cout < n2.cout):
+    	return 1
+    return 0
+
 def hammingHeuristique(puzzle, puzzleGoal):
     heuristique = 0;
     for coordonne, valeur in puzzle.items():
@@ -255,8 +286,10 @@ def createVoisin(noeud, oldPos0, newPos0, puzzleGoal, mode):
     	voisin.heuristique = hammingHeuristique(voisin.puzzle, puzzleGoal)
     elif mode == 2:
     	voisin.heuristique = manhattanHeuristique(voisin.puzzle, puzzleGoal)
-    else:
+    elif mode == 3:
     	voisin.heuristique = linearConflict(voisin.puzzle, puzzleGoal)
+    else:
+    	voisin.heuristique = 0
     return voisin
 
 def findVoisins(noeud, puzzleGoal, mode):
@@ -301,7 +334,23 @@ def same2Dict(dict1, dict2):
 
 def puzzleInList(list, puzzle):
     for noeud in list:
+        # print("1:")
+        # printPuzzle(noeud.puzzle)
+        # print("2:")
+        # printPuzzle(puzzle)
         if same2Dict(noeud.puzzle, puzzle) == 1:
+            # print("Same")
+            return 1
+    return 0
+
+def puzzleInList2(list, puzzle):
+    for noeud in list:
+        print("1:")
+        printPuzzle(noeud.puzzle)
+        print("2:")
+        printPuzzle(puzzle)
+        if same2Dict(noeud.puzzle, puzzle) == 1:
+            print("Same")
             return 1
     return 0
 
@@ -328,25 +377,16 @@ def printInfoList(list, infoOn):
         i += 1
         printNoeud(noeud, infoOn)		
 
-def main():
-	start = visualStart.visualStart()
-	mode = Mode(start.heuristique,start.greedy.get())
-	h_tab = variable(0)
-	w_tab = variable(0)
+def greedy(openList, closedList, mode, puzzleInitial, puzzleGoal, w_tab):
+
 	timeComplexity = 0
 	sizeComplexity = 0
-	puzzleInitial = createInitiateState(start.file.get(), h_tab , w_tab)
-	puzzleGoal = createGoalState(h_tab , w_tab)
-	openList = List("openList")
-	closedList = List("closedList")
-	noeudActuel = Noeud(puzzleInitial, 0, 0, 0)
-	openList.ajouter(noeudActuel)
 	while openList.max > 0:
-		print("ui")
 		timeComplexity += 1
-		noeudActuel = openList.depiler()
+		noeudActuel = openList.getBest()
+		# noeudActuel = openList.smallHeuristique()
 		if hammingHeuristique(noeudActuel.puzzle, puzzleGoal) == 0:
-			finalList = List("finalList")
+			finalList = List("finalList", 0)
 			while noeudActuel.parent != 0:
 				finalList.ajouter(noeudActuel)
 				noeudActuel = noeudActuel.parent
@@ -364,17 +404,71 @@ def main():
 			elif puzzleInList(openList.noeuds, v.puzzle) and heuristiquePuzzleInList(openList.noeuds, v.puzzle) <= v.heuristique:
 				pass
 			else:
-				if mode.greedy == 0:
-					sizeComplexity += 1
-					openList.ajouter(v)
-				else:
-					if better == 0 or compare2Noeuds(v, better) == 1 :
-						better = v
-		if better != 0:
-			sizeComplexity += 1
-			openList.ajouter(better)
+				sizeComplexity += 1
+				openList.ajouter(v)
 		closedList.ajouter(noeudActuel)
 		openList.supprimer(noeudActuel)
+
+def uniform(openList, closedList, mode, puzzleInitial, puzzleGoal, w_tab):
+	timeComplexity = 0
+	sizeComplexity = 0
+	while openList.max > 0 and timeComplexity < 3000:
+		print("timeComplexity:", timeComplexity)
+		timeComplexity += 1
+		# noeudActuel = openList.smallCost()
+		# printNoeud(noeudActuel, 1)
+
+		toTest = List("toTest")
+		toTest.noeuds = openList.noeuds.copy()
+
+		cout = -1
+		for noeudActuel in toTest.noeuds:
+			if (timeComplexity == 10):
+				printNoeud(noeudActuel, 1)
+			if hammingHeuristique(noeudActuel.puzzle, puzzleGoal) == 0:
+				finalList = List("finalList", 0)
+				while noeudActuel.parent != 0:
+					finalList.ajouter(noeudActuel)
+					noeudActuel = noeudActuel.parent
+				printInfoList(finalList, 0)
+				print("Complexity in time:\t", timeComplexity)
+				print("Complexity in size:\t", sizeComplexity)
+				print("OpenList:\t", openList.max)
+				print("ClosedList:\t", closedList.max)
+				print("Moves:\t", finalList.max)
+				visualFinal.visualFinal(w_tab.Int(), puzzleGoal, finalList)
+				return 1
+			print("cout:", cout)
+			if cout == -1 or noeudActuel.cout < cout:
+				cout = noeudActuel.cout
+				for v in findVoisins(noeudActuel, puzzleGoal, 0):
+					if puzzleInList(closedList.noeuds, v.puzzle):
+						pass
+					if puzzleInList(openList.noeuds, v.puzzle):
+						pass
+					else:
+						sizeComplexity += 1
+						openList.ajouter(v)
+				closedList.ajouter(noeudActuel)
+				openList.supprimer(noeudActuel)
+
+def main():
+	start = visualStart.visualStart()
+	mode = Mode(start.heuristique.get(),start.greedy.get())
+	h_tab = variable(0)
+	w_tab = variable(0)
+	timeComplexity = 0
+	sizeComplexity = 0
+	puzzleInitial = createInitiateState(start.file.get(), h_tab , w_tab)
+	puzzleGoal = createGoalState(h_tab , w_tab)
+	openList = List("openList", 1)
+	closedList = List("closedList", 0)
+	noeudActuel = Noeud(puzzleInitial, 0, 0, 0)
+	openList.ajouter(noeudActuel)
+	if mode.greedy == 1:
+		greedy(openList, closedList, mode, puzzleInitial, puzzleGoal, w_tab)
+	else:
+		uniform(openList, closedList, mode, puzzleInitial, puzzleGoal, w_tab)
 
 main()
 # start = visualStart.visualStart()
