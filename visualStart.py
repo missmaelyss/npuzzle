@@ -14,12 +14,15 @@ class Start():
 		self.hamming = IntVar()
 		self.linear = IntVar()
 		self.heuristique = IntVar()
+		self.visual = IntVar()
 		self.createWidgets()
 
 	def createWidgets(self):
 		self.heuristique.set(3)
-		self.greedy.set(1)
-		self.uniform.set(0)
+		self.uniform.set(1)
+		self.greedy.set(0)
+		self.linear.set(1)
+		self.visual.set(0)
 		self.mainFrame = Frame(self.parent)
 		Label(self.mainFrame, text = 'Choose your file', font=(",50")).pack(padx = 10, pady = 10)
 		frame = Frame(self.mainFrame)
@@ -37,6 +40,10 @@ class Start():
 		Checkbutton(buttons2,text="Greedy Search",variable=self.greedy, command=self.updateGreedy).grid(row = 1,column = 1, padx = 10, pady = 10, sticky = W)
 		Checkbutton(buttons2,text="Uniform Cost",variable=self.uniform, command=self.updateUniform).grid(row = 1,column = 2, padx = 10, pady = 10, sticky = W)
 		buttons2.grid(row = 2,column = 1, padx = 10, pady = 10, sticky = W)
+		Label(frame,text = 'Option').grid(row = 3,column = 0,sticky = W)
+		buttons3 = Frame(frame)
+		Checkbutton(buttons3,text="Visual Resolution",variable=self.visual).grid(row = 1,column = 1, padx = 10, pady = 10, sticky = W)
+		buttons3.grid(row = 3,column = 1, padx = 10, pady = 10, sticky = W)
 		frame.pack(padx=10,pady=10)
 		Button(self.mainFrame,text='Resolve',command=self.start).pack(padx=10,pady=10)
 		self.mainFrame.pack()
@@ -49,15 +56,24 @@ class Start():
 
 	def updateMan(self):
 		self.hamming.set(0)
-		self.linear.set(0)
+		if self.manhattan.get() == 0:
+			self.linear.set(1)
+		else:
+			self.linear.set(0)
 
 	def updateHam(self):
 		self.manhattan.set(0)
-		self.linear.set(0)
+		if self.hamming.get() == 0:
+			self.linear.set(1)
+		else:
+			self.linear.set(0)
 
 	def updateLin(self):
 		self.hamming.set(0)
-		self.manhattan.set(0)
+		if self.linear.get() == 0:
+			self.manhattan.set(1)
+		else:
+			self.manhattan.set(0)
 
 	def start(self):
 		if self.file.get() == "":
